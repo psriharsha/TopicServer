@@ -40,7 +40,7 @@ public class ClientHandler extends Thread{
 	Map<String,String> data = null;
 	MessageType cmd = null;
 	List<User> users = new ArrayList<User>();
-	List<String> usernames = new ArrayList<String>();
+	public static List<String> usernames = new ArrayList<String>();
 	
 	public enum MessageType{
 		LOGIN,
