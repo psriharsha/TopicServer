@@ -10,9 +10,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -29,6 +29,7 @@ public class ClientHandler extends Thread{
 
 	Socket clientThread;
 	public static List<Socket> clientList = new ArrayList<Socket>();
+	public static Vector<String> topics = new Vector<String>();
 	
 	boolean serveClient = true;
 	BufferedReader br = null;
@@ -45,9 +46,11 @@ public class ClientHandler extends Thread{
 	public enum MessageType{
 		LOGIN,
 		PING,
+		ADD_TOPIC,
 		SELECT_TOPIC,
 		APPEND_TOPIC,
 		CLOSE_TOPIC,
+		GET_TOPICS,
 		AUCTION,
 		BID;
 		public static MessageType getType(String type){
@@ -59,7 +62,9 @@ public class ClientHandler extends Thread{
 			case "close" : msgType = MessageType.CLOSE_TOPIC; break;
 			case "append" : msgType = MessageType.APPEND_TOPIC; break;
 			case "auction" : msgType = MessageType.AUCTION; break;
-			case "bid" : msgType = MessageType.BID;
+			case "bid" : msgType = MessageType.BID; break;
+			case "new" : msgType = MessageType.ADD_TOPIC; break;
+			case "get" : msgType = MessageType.GET_TOPICS;
 			}
 			return msgType;
 		}
@@ -127,6 +132,17 @@ public class ClientHandler extends Thread{
 			case CLOSE_TOPIC: break;
 			case AUCTION: break;
 			case BID: break;
+			case ADD_TOPIC:
+				if(!topics.contains(data.get("name"))){
+					topics.add(data.get("name"));
+					toSend = "<new><result>success</result></new>";
+					informClients();
+				}else{
+					toSend = "<new><result>failed</result></new>";
+				}
+				break;
+			case GET_TOPICS:
+				toSend = getTopics(); break;
 			}
 			out.println(toSend);
 			out.flush();
@@ -148,6 +164,30 @@ public class ClientHandler extends Thread{
 			e.printStackTrace();
 		}
 		}
+	}
+	private void informClients() {
+		// TODO Auto-generated method stub
+		for(int i=0; i<clientList.size(); i++){
+			try {
+				PrintWriter output = new PrintWriter(new OutputStreamWriter(clientList.get(i).getOutputStream()));
+				output.println(getTopics());
+				output.flush();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	private String getTopics() {
+		// TODO Auto-generated method stub		
+		String topicsList = "<get>";
+		synchronized(topics){
+		for(int i=0; i< topics.size(); i++){
+			topicsList += "<name" + i + ">" + topics.get(i) + "</name" + i + ">";
+		}
+		topicsList += "</get>";
+		}
+		return topicsList;
 	}
 	
 }
