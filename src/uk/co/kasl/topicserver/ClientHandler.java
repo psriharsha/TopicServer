@@ -58,7 +58,7 @@ public class ClientHandler extends Thread{
 			switch(type){
 			case "login" : msgType = MessageType.LOGIN; break;
 			case "ping" : msgType = MessageType.PING; break;
-			case "topic" : msgType = MessageType.SELECT_TOPIC; break;
+			case "select" : msgType = MessageType.SELECT_TOPIC; break;
 			case "close" : msgType = MessageType.CLOSE_TOPIC; break;
 			case "append" : msgType = MessageType.APPEND_TOPIC; break;
 			case "auction" : msgType = MessageType.AUCTION; break;
@@ -128,9 +128,7 @@ public class ClientHandler extends Thread{
 				break;
 			case PING: break;
 			case SELECT_TOPIC:
-				if(usernames.contains(data.get("username")) && topics.contains(data.get("topic"))){
-					sendSelectTopic(data.get("username"),data.get("topic"));
-				}
+				toSend = sendSelectTopic(data.get("username"),data.get("topic"));
 				break;
 			case APPEND_TOPIC: break;
 			case CLOSE_TOPIC: break;
@@ -148,8 +146,11 @@ public class ClientHandler extends Thread{
 			case GET_TOPICS:
 				toSend = getTopics(); break;
 			}
-			out.println(toSend);
-			out.flush();
+			if(toSend != ""){
+				out.println(toSend);
+				out.flush();
+				toSend = "";
+			}
 			/*Iterator it = data.entrySet().iterator();
 			while(it.hasNext()){
 				Map.Entry pair = (Map.Entry)it.next();
@@ -169,19 +170,20 @@ public class ClientHandler extends Thread{
 		}
 		}
 	}
-	private void sendSelectTopic(String username, String topic) {
+	private String sendSelectTopic(String username, String topic) {
 		// TODO Auto-generated method stub
+		String toSend = "<select><username>" + username + "</username><topic>" + topic +"</topic></select>";
 		for(int i=0; i<clientList.size(); i++){
 			try {
 				PrintWriter output = new PrintWriter(new OutputStreamWriter(clientList.get(i).getOutputStream()));
-				String toSend = "<select><username>" + username + "</username><topic>" + topic +"</topic></select>";
-				output.println(toSend);
+				output.println("<select><username>" + username + "</username><topic>" + topic +"</topic></select>");
 				output.flush();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
+		return toSend;
 	}
 	private void informClients() {
 		// TODO Auto-generated method stub
