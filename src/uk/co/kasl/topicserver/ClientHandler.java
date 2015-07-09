@@ -127,7 +127,11 @@ public class ClientHandler extends Thread{
 				}
 				break;
 			case PING: break;
-			case SELECT_TOPIC: break;
+			case SELECT_TOPIC:
+				if(usernames.contains(data.get("username")) && topics.contains(data.get("topic"))){
+					sendSelectTopic(data.get("username"),data.get("topic"));
+				}
+				break;
 			case APPEND_TOPIC: break;
 			case CLOSE_TOPIC: break;
 			case AUCTION: break;
@@ -163,6 +167,20 @@ public class ClientHandler extends Thread{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		}
+	}
+	private void sendSelectTopic(String username, String topic) {
+		// TODO Auto-generated method stub
+		for(int i=0; i<clientList.size(); i++){
+			try {
+				PrintWriter output = new PrintWriter(new OutputStreamWriter(clientList.get(i).getOutputStream()));
+				String toSend = "<select><username>" + username + "</username><topic>" + topic +"</topic></select>";
+				output.println(toSend);
+				output.flush();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	private void informClients() {
