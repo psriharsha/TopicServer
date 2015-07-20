@@ -25,11 +25,15 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import uk.co.kasl.topicserver.utility.Message;
+import uk.co.kasl.topicserver.utility.Topic;
+
 public class ClientHandler extends Thread{
 
 	Socket clientThread;
 	public static List<Socket> clientList = new ArrayList<Socket>();
 	public static Vector<String> topics = new Vector<String>();
+	public static Vector<Topic> topicList = new Vector<Topic>();
 	
 	boolean serveClient = true;
 	BufferedReader br = null;
@@ -130,13 +134,28 @@ public class ClientHandler extends Thread{
 			case SELECT_TOPIC:
 				toSend = sendSelectTopic(data.get("username"),data.get("topic"));
 				break;
-			case APPEND_TOPIC: break;
+			case APPEND_TOPIC:
+			{
+				int i = 0;
+				String topic = data.get("topic");
+				String user = data.get("user");
+				for(i = 0; i < topicList.size(); i ++){
+					if(topic.equals(topicList.get(i).getTopicName())){
+						topicList.get(i).addMessage(user, data.get("msg"));
+						break;
+					}
+				}
+				appendTopics2Clients(topic, data.get("msg"), i);
+				toSend = "<append><result>success</result></append>";
+			}
+				break;
 			case CLOSE_TOPIC: break;
 			case AUCTION: break;
 			case BID: break;
 			case ADD_TOPIC:
 				if(!topics.contains(data.get("name"))){
 					topics.add(data.get("name"));
+					topicList.add(new Topic(data.get("name")));
 					toSend = "<new><result>success</result></new>";
 					informClients();
 				}else{
@@ -184,6 +203,39 @@ public class ClientHandler extends Thread{
 			}
 		}
 		return toSend;
+	}
+	private void appendTopics2Clients(String topicName, String client, int loc){
+		for(int i=0; i<clientList.size(); i++){
+			try {
+				PrintWriter output = new PrintWriter(new OutputStreamWriter(clientList.get(i).getOutputStream()));
+				output.println(getTopicMessages(topicName, loc));
+				output.flush();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	private String getTopicMessages(String topicName, int loc) {
+		// TODO Auto-generated method stub
+		String topicsListMsgs = "<message id=\"" + topicName +"\">";
+		Vector<Message> msgs = new Vector<Message>();
+		synchronized(topicList){
+			if(topicList.get(loc).getTopicName().equals(topicName)){
+				msgs = topicList.get(loc).getTopicMessage();
+			}else{
+				for(int i = 0; i < topicList.size(); i++){
+					if(topicName.equals(topicList.get(i).getTopicName())){
+						msgs = topicList.get(i).getTopicMessage();
+					}
+				}
+			}
+			for(int i = 0; i < msgs.size(); i++){
+				topicsListMsgs += "<instance><user>" + msgs.get(i).getName() + "</user><msg>" + msgs.get(i).getMessage() + "</msg><instance>";
+			}
+			topicsListMsgs += "<message>";
+		}
+		return topicsListMsgs;
 	}
 	private void informClients() {
 		// TODO Auto-generated method stub
